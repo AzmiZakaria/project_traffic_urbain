@@ -4,3 +4,6 @@
 .ENV/
 *.pyc
 __pycache__/
+
+data/
+logs/

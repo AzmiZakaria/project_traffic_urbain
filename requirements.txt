@@ -1,0 +1,33 @@
+# === Core Data Processing ===
+pandas==2.1.4
+numpy==1.26.2
+
+# === Kafka ===
+kafka-python
+confluent-kafka
+# === Spark ===
+pyspark==3.5.1
+
+# === HDFS ===
+hdfs==2.7.3
+pyarrow==14.0.2
+
+# === PostgreSQL ===
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.23
+
+# === Airflow Providers (si besoin) ===
+apache-airflow-providers-apache-spark==4.5.0
+apache-airflow-providers-apache-kafka==1.3.0
+
+# === Utilities ===
+python-dotenv==1.0.0
+faker==22.0.0
+pytz==2023.3.post1
+
+# === Testing ===
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# === Logging & Monitoring ===
+loguru==0.7.2
