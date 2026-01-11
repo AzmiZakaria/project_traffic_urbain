@@ -19,4 +19,4 @@ def generate_traffic_event(sensor_id, hour):
         "average_speed": random.uniform(30, 80) if not is_rush_hour else random.uniform(10, 40),
         "occupancy_rate": random.uniform(60, 95) if is_rush_hour else random.uniform(20, 50),
         "event_time": datetime.now().isoformat()
-    }touc
+    }
