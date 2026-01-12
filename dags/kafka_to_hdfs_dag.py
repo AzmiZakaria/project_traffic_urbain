@@ -7,7 +7,7 @@ import os
 from kafka import KafkaConsumer
 from hdfs import InsecureClient
 
-# --- CONFIGURATION DOCKER ---
+# CONFIGURATION DOCKER
 KAFKA_HOST = 'kafka:9092'  
 NAMENODE_URL = 'http://namenode:9870'
 TOPIC = 'traffic-events'

@@ -1,8 +1,6 @@
 version: '3.8'
 
-# ==========================================================================
 # COMMON AIRFLOW CONFIGURATION
-# ==========================================================================
 x-airflow-common:
   &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.3}
@@ -31,9 +29,7 @@ x-airflow-common:
 
 services:
 
-  # ==========================================================================
   # DATABASE
-  # ==========================================================================
   postgres:
     image: postgres:13
     container_name: postgres
@@ -52,9 +48,9 @@ services:
       start_period: 5s
     restart: always
 
-  # ==========================================================================
   # AIRFLOW SERVICES
-  # ==========================================================================
+    
+  # webserver
   airflow-webserver:
     <<: *airflow-common
     container_name: airflow-webserver
@@ -73,6 +69,7 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  # scheduler
   airflow-scheduler:
     <<: *airflow-common
     container_name: airflow-scheduler
@@ -88,7 +85,8 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-
+  
+  # airflow-init
   airflow-init:
     <<: *airflow-common
     container_name: airflow-init
@@ -152,9 +150,7 @@ services:
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
 
-  # ==========================================================================
   # HDFS NAMENODE
-  # ==========================================================================
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
@@ -174,9 +170,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # ==========================================================================
   # HDFS DATANODE
-  # ==========================================================================
   datanode:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode
@@ -195,9 +189,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # ==========================================================================
   # ZOOKEEPER
-  # ==========================================================================
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -217,9 +209,7 @@ services:
       retries: 5
       start_period: 10s
 
-  # ==========================================================================
   # KAFKA
-  # ==========================================================================
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
@@ -249,9 +239,7 @@ services:
       retries: 5
       start_period: 40s
 
-  # ==========================================================================
   # SPARK MASTER
-  # ==========================================================================
   spark-master:
     image: apache/spark:3.5.1-scala2.12-java11-python3-ubuntu
     container_name: spark-master
@@ -277,9 +265,7 @@ services:
       retries: 3
       start_period: 30s
 
-  # ==========================================================================
   # SPARK WORKER
-  # ==========================================================================
   spark-worker:
     image: apache/spark:3.5.1-scala2.12-java11-python3-ubuntu
     container_name: spark-worker
@@ -307,9 +293,7 @@ services:
       retries: 3
       start_period: 30s
 
-  # ==========================================================================
   # GRAFANA
-  # ==========================================================================
   grafana:
     image: grafana/grafana:10.2.2
     container_name: grafana
@@ -328,9 +312,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # ==========================================================================
   # PGADMIN
-  # ==========================================================================
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
@@ -345,9 +327,7 @@ services:
     depends_on:
       - postgres
 
-# ==========================================================================
 # VOLUMES
-# ==========================================================================
 volumes:
   postgres-db-volume:
   hadoop_namenode:

@@ -5,16 +5,15 @@ import uuid
 from datetime import datetime
 from kafka import KafkaProducer
 
-# --- CONFIGURATION ---
-# Note : D'après ton YAML, l'accès externe est sur 9093
+# CONFIGURATION KAFKA
 KAFKA_BOOTSTRAP_SERVERS = 'localhost:9093' 
 KAFKA_TOPIC = 'traffic-events'
+
 
 def generate_event():
     """Génère un événement de trafic simulé"""
     vehicle_count = random.randint(0, 150)
     
-    # Logique métier simple
     if vehicle_count > 100:
         avg_speed = random.randint(5, 20)
         occupancy = random.randint(80, 100)
@@ -41,27 +40,38 @@ def generate_event():
 def main():
     print(f"Démarrage Générateur -> Kafka ({KAFKA_BOOTSTRAP_SERVERS})")
     
+    # Tentative de connexion au broker Kafka
     try:
+        # Création du producteur Kafka avec sérialisation JSON
         producer = KafkaProducer(
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')  # Conversion dict -> JSON -> bytes
         )
         print("✅ Connecté à Kafka !")
     except Exception as e:
         print(f"❌ Erreur connexion Kafka (Vérifie que le port 9093 est ouvert) : {e}")
         return
 
+    # Boucle principale d'envoi des événements
     try:
         while True:
+            # Génération d'un nouvel événement de trafic
             event = generate_event()
+            
+            # Envoi de l'événement au topic Kafka
             producer.send(KAFKA_TOPIC, value=event)
+            
+            # Affichage des informations de l'événement envoyé
             print(f"📤 [Sensor {event['sensor_id']}] Vitesse: {event['average_speed']} km/h | Zone {event['zone']} | Véhicules {event['vehicle_count']}")
-            time.sleep(1) # 1 message par seconde
+            
+            # Pause d'1 seconde entre chaque envoi (1 message/seconde)
+            time.sleep(1)
             
     except KeyboardInterrupt:
+        # Gestion de l'arrêt propre avec Ctrl+C
         print("")
         print(10*"*"+" Arrêt du générateur. "+"*"*10)
-        producer.close()
+        producer.close()  # Fermeture propre de la connexion Kafka
 
 if __name__ == "__main__":
     main()
