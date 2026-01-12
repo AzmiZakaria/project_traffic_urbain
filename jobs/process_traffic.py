@@ -1,17 +1,16 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, avg, count, current_timestamp, from_json
+from pyspark.sql.functions import col, avg, count, current_timestamp
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 
 def main():
-    # 1. Initialisation de la Session Spark
     spark = SparkSession.builder \
         .appName("SmartCityTrafficAnalysis") \
         .master("spark://spark-master:7077") \
         .getOrCreate()
 
-    spark.sparkContext.setLogLevel("WARN") # Moins de logs inutiles
+    spark.sparkContext.setLogLevel("WARN")
 
-    # 2. Définition du Schéma (Indispensable pour du JSON)
+    # Schéma
     schema = StructType([
         StructField("event_id", StringType(), True),
         StructField("sensor_id", StringType(), True),
@@ -24,47 +23,47 @@ def main():
         StructField("timestamp", StringType(), True)
     ])
 
-    print("⚡ Lecture des données brutes depuis HDFS...")
-    # On lit tous les fichiers JSON du dossier raw
-    # path explicite avec le port HDFS interne
-    input_path = "hdfs://namenode:9000/data/raw/traffic/*.json"
-    
+    # Lecture HDFS
+    print("⚡ Lecture HDFS...")
     try:
-        df_raw = spark.read.schema(schema).json(input_path)
-    except Exception as e:
-        print(f"⚠️ Erreur de lecture (Dossier peut-être vide ?) : {e}")
+        df_raw = spark.read.schema(schema).json("hdfs://namenode:9000/data/raw/traffic/*.json")
+    except:
+        print("⚠️ Pas de données.")
         return
 
-    if df_raw.count() == 0:
-        print("⚠️ Aucune donnée à traiter.")
-        return
+    if df_raw.count() == 0: return
 
-    # 3. Traitement & Agrégations (KPIs)
-    
-    # KPI 1 : Vitesse moyenne et Trafic par Zone
-    df_zone_stats = df_raw.groupBy("zone").agg(
+    # Agrégations
+    df_stats = df_raw.groupBy("zone").agg(
         avg("average_speed").alias("avg_speed"),
         avg("occupancy_rate").alias("avg_occupancy"),
         count("event_id").alias("total_events")
     ).withColumn("processing_time", current_timestamp())
-
-    print("\n--- RÉSULTATS PAR ZONE (Aperçu) ---")
-    df_zone_stats.show()
-
-    # KPI 2 : Détection des congestions (Vitesse < 30 km/h)
-    df_congestion = df_raw.filter(col("average_speed") < 30) \
-                          .select("zone", "road_id", "average_speed", "timestamp")
-
-    # 4. Sauvegarde en format PARQUET (Analytics Zone)
-    output_path = "hdfs://namenode:9000/data/analytics/traffic_stats"
     
-    print(f"💾 Sauvegarde des résultats dans {output_path}...")
+    df_stats.show()
+
+    # 1. Sauvegarde HDFS (Data Lake)
+    print("💾 Ecriture HDFS (Parquet)...")
+    df_stats.write.mode("overwrite").parquet("hdfs://namenode:9000/data/analytics/traffic_stats")
+
+    # 2. Sauvegarde PostgreSQL (Pour Grafana) - NOUVEAU BLOC
+    print("💾 Ecriture PostgreSQL...")
     
-    # Mode 'overwrite' : On écrase l'analyse précédente (pour ce test)
-    # En prod, on partitionnerait par date.
-    df_zone_stats.write.mode("overwrite").parquet(output_path)
-    
-    print("✅ Traitement Spark terminé avec succès !")
+    # Configuration JDBC (Utilise les infos de ton docker-compose)
+    jdbc_url = "jdbc:postgresql://postgres:5432/airflow"
+    jdbc_properties = {
+        "user": "airflow",
+        "password": "airflow",
+        "driver": "org.postgresql.Driver"
+    }
+
+    # On écrit dans la table 'traffic_analytics'
+    # mode 'append' pour garder l'historique des calculs
+    df_stats.write \
+        .mode("append") \
+        .jdbc(url=jdbc_url, table="traffic_analytics", properties=jdbc_properties)
+
+    print("✅ Terminé.")
     spark.stop()
 
 if __name__ == "__main__":
