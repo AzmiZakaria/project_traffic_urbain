@@ -1,5 +1,6 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
 import json
 import os
@@ -80,3 +81,17 @@ with DAG(
         task_id='consume_kafka_write_hdfs',
         python_callable=consume_and_store_hdfs,
     )
+    # 2. Tâche de Processing (Spark -> Postgres)
+    process_task = BashOperator(
+        task_id='trigger_spark_job',
+        bash_command="""
+        docker exec spark-master /opt/spark/bin/spark-submit \
+          --master spark://spark-master:7077 \
+          --jars /opt/jobs/postgresql-42.7.3.jar \
+          /opt/jobs/process_traffic.py
+        """
+    )
+
+    # 3. Ordonnancement
+    # On dit : "Fais l'ingestion D'ABORD, et SI c'est bon, lance Spark"
+    ingest_task >> process_task
