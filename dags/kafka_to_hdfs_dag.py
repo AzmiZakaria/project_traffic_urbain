@@ -7,8 +7,8 @@ import os
 from kafka import KafkaConsumer
 from hdfs import InsecureClient
 
-# --- CONFIGURATION INTERNE DOCKER ---
-KAFKA_HOST = 'kafka:9092'  # Port interne
+# --- CONFIGURATION DOCKER ---
+KAFKA_HOST = 'kafka:9092'  
 NAMENODE_URL = 'http://namenode:9870'
 TOPIC = 'traffic-events'
 HDFS_PATH = '/data/raw/traffic'
@@ -22,10 +22,9 @@ default_args = {
 }
 
 def consume_and_store_hdfs():
-    print("🚀 Démarrage Job Ingestion Kafka -> HDFS")
+    print(10*"*"+"Démarrage Job Ingestion Kafka -> HDFS"+"*"*10)
     
     # 1. Connexion HDFS
-    # Note: Dans ton réseau Docker, le namenode est accessible via son hostname
     try:
         client = InsecureClient(NAMENODE_URL, user='root')
         print("✅ Connexion HDFS OK")
@@ -34,7 +33,6 @@ def consume_and_store_hdfs():
         raise
 
     # 2. Consumer Kafka
-    # On utilise un group_id pour reprendre la lecture là où on s'est arrêté
     consumer = KafkaConsumer(
         TOPIC,
         bootstrap_servers=KAFKA_HOST,
@@ -46,7 +44,7 @@ def consume_and_store_hdfs():
     )
 
     messages = []
-    print("📥 Lecture des messages Kafka...")
+    print(10*"*"+" Lecture des messages Kafka..."+"*"*10)
     
     for message in consumer:
         messages.append(message.value)
@@ -67,7 +65,8 @@ def consume_and_store_hdfs():
     with client.write(hdfs_file_path, encoding='utf-8') as writer:
         writer.write(content)
         
-    print(f"💾 Sauvegardé : {hdfs_file_path} ({len(messages)} events)")
+    print(10*"*"+f"💾 Sauvegardé : {hdfs_file_path} ({len(messages)} events)"+10*"*")
+
 
 with DAG(
     'traffic_ingestion_kafka_hdfs',
@@ -76,7 +75,7 @@ with DAG(
     schedule_interval=timedelta(minutes=2), # Lance toutes les 2 minutes
     catchup=False,
 ) as dag:
-
+    # 1. Tâche d'Ingestion (Kafka -> HDFS)
     ingest_task = PythonOperator(
         task_id='consume_kafka_write_hdfs',
         python_callable=consume_and_store_hdfs,
@@ -91,7 +90,5 @@ with DAG(
           /opt/jobs/process_traffic.py
         """
     )
-
     # 3. Ordonnancement
-    # On dit : "Fais l'ingestion D'ABORD, et SI c'est bon, lance Spark"
     ingest_task >> process_task

@@ -24,7 +24,7 @@ def main():
     ])
 
     # Lecture HDFS
-    print("⚡ Lecture HDFS...")
+    print("Lecture HDFS...")
     try:
         df_raw = spark.read.schema(schema).json("hdfs://namenode:9000/data/raw/traffic/*.json")
     except:

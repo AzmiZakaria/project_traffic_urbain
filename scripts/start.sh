@@ -18,6 +18,7 @@ EOF
 # Create directories
 echo "Creating directories..."
 mkdir -p dags logs plugins config spark-apps
+chmod -R 777 logs dags plugins jobs data
 
 # Initialize Airflow
 echo ""

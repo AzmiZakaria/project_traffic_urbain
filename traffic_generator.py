@@ -39,7 +39,7 @@ def generate_event():
     return event
 
 def main():
-    print(f"🚀 Démarrage Générateur -> Kafka ({KAFKA_BOOTSTRAP_SERVERS})")
+    print(f"Démarrage Générateur -> Kafka ({KAFKA_BOOTSTRAP_SERVERS})")
     
     try:
         producer = KafkaProducer(
@@ -59,7 +59,8 @@ def main():
             time.sleep(1) # 1 message par seconde
             
     except KeyboardInterrupt:
-        print("\n🛑 Arrêt du générateur.")
+        print("")
+        print(10*"*"+" Arrêt du générateur. "+"*"*10)
         producer.close()
 
 if __name__ == "__main__":
